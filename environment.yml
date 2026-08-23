@@ -7,15 +7,15 @@ channels:
 dependencies:
     - python==3.12
     - pip
-    - conda-forge::openssl
     - conda-forge::jq
+    - conda-forge::ncbi-datasets-cli
+    - conda-forge::openssl
     - conda-forge::unzip
     - bioconda::diamond
     - bioconda::fasttree
     - bioconda::hyphy
     - bioconda::kaks-calculator
     - bioconda::mafft
-    - bioconda::ncbi-datasets-cli
     - bioconda::pal2nal
     - bioconda::proteinortho
     - bioconda::pseudofinder
