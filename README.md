@@ -1,12 +1,12 @@
 # Nextflow pipeline template
 
-![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/scbirlab/nf-template/nf-test.yml)
+![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/scbirlab/nf-dnds/nf-test.yml)
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.10.0-23aa62.svg)](https://www.nextflow.io/)
 [![run with conda](https://img.shields.io/badge/run%20with-conda-3EB049?labelColor=000000&logo=anaconda)](https://docs.conda.io/en/latest/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 
-**scbirlab/nf-otemple** is a Nextflow pipeline template.
+**scbirlab/nf-dnds** is a Nextflow pipeline template.
 
 Use it to scaffold a new pipeline project.
 
@@ -65,7 +65,7 @@ a [`nextflow.config` file](#inputs) in the directory where you want the
 pipeline to run. Then run Nextflow.
 
 ```bash 
-nextflow run scbirlab/nf-template
+nextflow run scbirlab/nf-dnds
 ```
 
 Each time you run the pipeline after the first time, Nextflow will use a 
@@ -74,16 +74,16 @@ to ensure that you're using the very latest version of the pipeline, use
 the `-latest` flag.
 
 ```bash 
-nextflow run scbirlab/nf-template -latest
+nextflow run scbirlab/nf-dnds -latest
 ```
 
 If you want to run a particular tagged version of the pipeline, such as `v0.0.1`, you can do so using
 
 ```bash 
-nextflow run scbirlab/nf-template -r v0.0.1
+nextflow run scbirlab/nf-dnds -r v0.0.1
 ```
 
-For help, use `nextflow run scbirlab/nf-template --help`.
+For help, use `nextflow run scbirlab/nf-dnds --help`.
 
 The first time you run the pipeline for a project, the software dependencies 
 in `environment.yml` will be installed. This may take several minutes.
@@ -113,7 +113,7 @@ params {
 Alternatively, you can provide the parameters on the command line:
 
 ```bash
-nextflow run scbirlab/nf-template \
+nextflow run scbirlab/nf-dnds \
     --sample_sheet /path/to/sample-sheet.csv \
     --inputs /path/to/inputs
 ``` 
@@ -142,7 +142,7 @@ Outputs are saved in the directory specified by `--outputs` (`outputs` by defaul
 ## Issues, problems, suggestions
 
 If you run into problems not covered here, add to the 
-[issue tracker](https://www.github.com/scbirlab/nf-template/issues).
+[issue tracker](https://www.github.com/scbirlab/nf-dnds/issues).
 
 ## Further help
 

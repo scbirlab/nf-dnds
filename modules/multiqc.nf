@@ -1,4 +1,4 @@
-process multiQC {
+process MultiQC {
 
    errorStrategy 'retry'
    maxRetries 1

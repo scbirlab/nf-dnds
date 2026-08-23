@@ -4,7 +4,7 @@
 ========================================================================================
    Variant calling Nextflow Workflow
 ========================================================================================
-   Github   : https://github.com/scbirlab/nf-template
+   Github   : https://github.com/scbirlab/nf-dnds
    Contact  : Eachan Johnson <user@crick.ac.uk>
 ----------------------------------------------------------------------------------------
 */
@@ -27,8 +27,8 @@ if ( params.help ) {
          Nextflow pipeline to ....
 
          Usage:
-            nextflow run scbirlab/nf-template --sample_sheet <csv> --inputs <dir>
-            nextflow run scbirlab/nf-template -c <config-file>
+            nextflow run scbirlab/nf-dnds --sample_sheet <csv> --inputs <dir>
+            nextflow run scbirlab/nf-dnds -c <config-file>
 
          Required parameters:
             sample_sheet      Path to a CSV with information about the samples 
@@ -67,8 +67,32 @@ log.info """${pipeline_name}
    MAIN Workflow
 ========================================================================================
 */
+
 include {
-   multiQC,
+   FastTree;
+} from './modules/fasttree.nf'
+include {
+   HyPhy;
+   ParseHyPy;
+} from './modules/hyphy.nf'
+include {
+   MAFFT;
+} from './modules/mafft.nf'
+include {
+   Fetch_genome_from_NCBI2 as Fetch_genome_from_NCBI;
+} from './modules/ncbi.nf'
+include {
+   Pal2Nal;
+} from './modules/pal2nal.nf'
+include {
+   ProteinOrtho;
+} from './modules/proteinortho.nf'
+include {
+   Fetch_taxonkit_db;
+   Fetch_taxonomic_ranks;
+} from './modules/taxonkit.nf'
+include {
+   MultiQC;
 } from './modules/multiqc.nf'
 
 workflow {
@@ -79,6 +103,40 @@ workflow {
    )
       .splitCsv( header: true )
       .set { csv_ch }
+
+   csv_ch
+      .map { v -> v.taxon_id }
+      .set { taxon_ch }
+
+   Fetch_genome_from_NCBI( taxon_ch )
+   EXTRACT_CDS( DOWNLOAD_GENOMES.out )
+   ProteinOrtho( EXTRACT_CDS.out )
+   EXTRACT_ORTHOGROUPS( ProteinOrtho.out )
+
+   // Fan-out: one tuple per orthogroup
+   og_ch = EXTRACT_ORTHOGROUPS.out
+      .flatMap { taxon_id, manifest, og_dir ->
+         manifest.readLines().drop(1)
+               .collect { og_id ->
+                  [
+                     taxon_id,
+                     og_id,
+                     og_dir.resolve("${og_id}/prot.faa"),
+                     og_dir.resolve("${og_id}/cds.fna")
+                  ]
+               }
+      }
+
+   MAFFT(og_ch)
+   pal2nal(MAFFT.out)
+   FastTree(PAL2NAL.out)
+   HyPhy(FASTTREE.out)
+
+   HyPhy.out
+      .groupTuple()
+      .set { grouped_ch }
+
+   PARSE_HYPHY( grouped_ch )
 
    // outputs
    //    .concat( other_outputs )
