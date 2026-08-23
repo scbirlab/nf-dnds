@@ -1,0 +1,13 @@
+name: nf-env
+
+channels:
+    - conda-forge
+    - bioconda
+
+dependencies:
+    - python==3.12
+    - pip
+    - conda-forge::openssl
+    - conda-forge::unzip
+    - pip:
+        - 'multiqc>=1.21'
