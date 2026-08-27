@@ -43,6 +43,9 @@ process Fetch_genome_from_NCBI2 {
    tag "${id}=${accession}; lim=${max_strains}"
    label 'med_mem'
 
+   errorStrategy 'retry'  // downloads from ncbi fail sometimes
+   maxRetries 3
+
    publishDir( 
       "${params.outputs}/genome", 
       mode: 'copy',
