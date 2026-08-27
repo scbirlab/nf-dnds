@@ -10,7 +10,7 @@ process HyPhy {
     val pvalue
 
     output:
-    tuple val( id ), path( "hyphy.json" )
+    tuple val( id ), val( orthogroup_id ), path( "hyphy.json" )
 
     script:
     """

@@ -63,9 +63,9 @@ process ExtractOrthogroups {
     ]
     print_err(f"{input_fastas=}")
 
-    new_cds_ids, new_protein_ids = set(), set()
 
     for i, row in enumerate(df.itertuples(index=False, name=None)):
+      new_cds_ids, new_protein_ids = set(), set()
       print_err(">>>", f"{row=}")
       n_species, n_genes,	alg_conn,	*protein_ids = row
       protein_ids = [
@@ -131,7 +131,7 @@ process ExtractOrthogroups {
               else:
                 continue
     
-    assert new_cds_ids == new_protein_ids, f"CDS and protein IDs dont all match:\\n{(new_cds_ids - new_protein_ids)=}\\n{(new_protein_ids - new_cds_ids)=}"
+      assert new_cds_ids == new_protein_ids, f"CDS and protein IDs dont all match:\\n{(new_cds_ids - new_protein_ids)=}\\n{(new_protein_ids - new_cds_ids)=}"
     
     """
 }

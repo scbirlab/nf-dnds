@@ -141,17 +141,9 @@ workflow {
          .combine( Fetch_genome_from_NCBI.out.cds, by: 0 )
    )
 
-   ExtractOrthogroups.out.protein
-      .map { v -> [v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]] }
-      .combine(
-         ExtractOrthogroups.out.cds
-         .map { v -> [v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]] },
-         by: [0, 1],
-      )
-      .set { orthogroup_ch }
-
    MAFFT(
       ExtractOrthogroups.out.protein
+         .transpose()
          .map { v -> [
             v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]] 
          },
@@ -161,6 +153,7 @@ workflow {
       MAFFT.out
          .combine(
             ExtractOrthogroups.out.cds
+               .transpose()
                .map { v -> [
                   v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]
                ] },
