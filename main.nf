@@ -87,6 +87,7 @@ include {
 } from './modules/pal2nal.nf'
 include {
    ProteinOrtho;
+   ExtractOrthogroups;
 } from './modules/proteinortho.nf'
 include {
    FetchTaxonkitDB;
@@ -134,29 +135,44 @@ workflow {
       Fetch_genome_from_NCBI.out.protein,
    )
 
-   //EXTRACT_CDS( Fetch_genome_from_NCBI.out )
-   // ProteinOrtho( EXTRACT_CDS.out )
-   //EXTRACT_ORTHOGROUPS( ProteinOrtho.out )
+   ExtractOrthogroups(
+      ProteinOrtho.out.tsv
+         .combine( Fetch_genome_from_NCBI.out.protein, by: 0 )
+         .combine( Fetch_genome_from_NCBI.out.cds, by: 0 )
+   )
 
-   // Fan-out: one tuple per orthogroup
-   // EXTRACT_ORTHOGROUPS.out
-   //    .flatMap { taxon_id, manifest, og_dir ->
-   //       manifest.readLines().drop(1)
-   //             .collect { og_id ->
-   //                [
-   //                   taxon_id,
-   //                   og_id,
-   //                   og_dir.resolve("${og_id}/prot.faa"),
-   //                   og_dir.resolve("${og_id}/cds.fna")
-   //                ]
-   //             }
-   //    }
-   //    .set { orthogroups_ch }
+   ExtractOrthogroups.out.protein
+      .map { v -> [v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]] }
+      .combine(
+         ExtractOrthogroups.out.cds
+         .map { v -> [v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]] },
+         by: [0, 1],
+      )
+      .set { orthogroup_ch }
 
-   // MAFFT( orthogroups_ch )
-   // Pal2Nal(MAFFT.out)
-   // FastTree(Pal2Nal.out)
-   // HyPhy(FastTree.out)
+   MAFFT(
+      ExtractOrthogroups.out.protein
+         .map { v -> [
+            v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]] 
+         },
+   )
+
+   Pal2Nal(
+      MAFFT.out
+         .combine(
+            ExtractOrthogroups.out.cds
+               .map { v -> [
+                  v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]
+               ] },
+            by: [0, 1],
+         ),
+   )
+   | FastTree
+   
+   HyPhy(
+      Pal2Nal.out.combine( FastTree.out, by: [0, 1] ),
+      Channel.value( params.pvalue ),
+   )
 
    // HyPhy.out
    //    .groupTuple()

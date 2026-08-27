@@ -15,10 +15,10 @@ process HyPhy {
     script:
     """
     hyphy slac \\
-        --alignment ${codon_aln} \\
-        --tree ${tree} \\
+        --alignment "${codon_aln}" \\
+        --tree "${tree}" \\
         --branches All \\
-        --pvalue ${pvalue} \\
+        --pvalue "${pvalue}" \\
         --output hyphy.json \\
         --ci Yes
     """

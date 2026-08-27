@@ -46,7 +46,7 @@ process Fetch_genome_from_NCBI2 {
    publishDir( 
       "${params.outputs}/genome", 
       mode: 'copy',
-      saveAs: { "${id}_dataset"},
+      saveAs: { "${id}_dataset/${it.split('/')[-1]}"},
    )
 
    input:
@@ -54,11 +54,11 @@ process Fetch_genome_from_NCBI2 {
    val max_strains
 
    output:
-   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/protein.faa" ), emit: protein
-   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/cds_from_genomic.fna" ), emit: cds
-   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/genomic.gff" ), emit: gff
-   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/genomic.gbff" ), emit: genbank
-   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/*_genomic.fna" ), emit: genome
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?-protein.faa" ), emit: protein
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?-cds_from_genomic.fna" ), emit: cds
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?-genomic.gff" ), emit: gff
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?-genomic.gbff" ), emit: genbank
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?-*_genomic.fna" ), emit: genome
 
    script:
    def limit = max_strains ? max_strains : 0
@@ -77,34 +77,50 @@ process Fetch_genome_from_NCBI2 {
       --filename genome.zip
    unzip genome.zip -d dataset-"${id}"/
 
-   datasets download genome taxon "${accession}" \\
-      --annotated \\
-      --mag exclude \\
-      --exclude-multi-isolate \\
-      --exclude-atypical \\
-      --assembly-source refseq \\
-      --assembly-level complete \\
-      --assembly-version current \\
-      --include genome,cds,protein,gbff,gff3 \\
-      --filename genome.zip
-   unzip genome.zip -d dataset-"${accession}"/
-
    mkdir -p _dataset-to-output
    if [ "${limit}" -gt 0 ]
    then
       i="${limit}"
-      n_files=\$(echo dataset-"${accession}"/ncbi_dataset/data/GC?_*.?/ | tr ' ' \$'\\n' | wc -l)
-      
-      mv dataset-"${id}"/ncbi_dataset/data/GC?_*.?/ _dataset-to-output
-      i="\$((i - \$n_files))"
-      rm -rf dataset-"${id}"
-
-      if [ "\$i" -gt 0 ]
-      then
-         mv \$(echo dataset-"${accession}"/ncbi_dataset/data/GC?_*.?/ | tr ' ' \$'\\n' | grep -v "\$REF" | head -n"\$i") _dataset-to-output
-      fi
    else
-      mv dataset-*/ _dataset-to-output
+      n_files=\$(echo dataset-*/ncbi_dataset/data/GC?_*.?/ | tr ' ' \$'\\n' | wc -l)
+      i="\$n_files"
+   fi
+
+   for d in dataset-"${id}"/ncbi_dataset/data/GC?_*.?/
+   do
+      for f in "\$d"/*
+      do
+         mv "\$f" _dataset-to-output/"\$(basename "\$d")"-"\$(basename "\$f")"
+      done
+      i="\$((i - 1))"
+   done
+
+   if [ "\$i" -gt 0 ] || [ "${limit}" -eq 0 ]
+   then
+      datasets download genome taxon "${accession}" \\
+         --annotated \\
+         --mag exclude \\
+         --exclude-multi-isolate \\
+         --exclude-atypical \\
+         --assembly-source refseq \\
+         --assembly-level complete \\
+         --assembly-version current \\
+         --include genome,cds,protein,gbff,gff3 \\
+         --filename genome.zip
+      unzip genome.zip -d dataset-"${accession}"/
+
+      for d in dataset-"${accession}"/ncbi_dataset/data/GC?_*.?/
+      do
+         for f in "\$d"/*
+         do
+            mv "\$f" _dataset-to-output/"\$(basename "\$d")"-"\$(basename "\$f")"
+         done
+         i="\$((i - 1))"
+         if [ "\$i" -eq 0 ] && [ "${limit}" -gt 0 ]
+         then
+            break
+         fi
+      done
    fi
 
    rm -rf dataset-*/
