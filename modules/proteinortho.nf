@@ -108,6 +108,7 @@ process ExtractOrthogroups {
               else:
                 continue
 
+      seen_cds = set()
       with open(f"orthogroup-{orthogroup_name}.fna", "w") as out:
         for genome_id, _proteins in these_orthologs.items():
           seq_names_to_keep = {name: f"[protein_id={name}]" for name in _proteins}
@@ -116,13 +117,16 @@ process ExtractOrthogroups {
             save = False
             for line in f:
               if line.startswith(">") and any(name in line for name in seq_names_to_keep.values()):
-                save = True
                 seqname = next(
                   name for name, string in seq_names_to_keep.items() 
                   if string in line
                 )
-                line = _line.format(genome_id=genome_id, seqname=seqname)
-                new_cds_ids.add(line)
+                this_line = _line.format(genome_id=genome_id, seqname=seqname)
+                if this_line not in seen_cds:
+                  seen_cds.add(this_line)
+                  save = True
+                  line = this_line
+                  new_cds_ids.add(line)
               elif line.startswith((">", "\\n", "*")):
                 save = False
 

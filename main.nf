@@ -141,12 +141,16 @@ workflow {
          .combine( Fetch_genome_from_NCBI.out.cds, by: 0 )
    )
 
+   ExtractOrthogroups.out.protein
+      .transpose()
+      .map { v -> [
+         v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]] 
+      }
+      .set { protein_ortho_ch }
+
+   
    MAFFT(
-      ExtractOrthogroups.out.protein
-         .transpose()
-         .map { v -> [
-            v[0], v[1].simpleName.split("orthogroup-")[-1], v[1]] 
-         },
+      ( params.test ? protein_ortho_ch.take(100) : protein_ortho_ch),
    )
 
    Pal2Nal(

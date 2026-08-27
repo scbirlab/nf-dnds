@@ -1,6 +1,6 @@
 process MAFFT {
     tag "${id}:${orthogroup_id}"
-    cpus 2
+    label "big_cpu"
 
     publishDir( 
       "${params.outputs}/alignments/protein", 

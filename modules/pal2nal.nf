@@ -19,6 +19,21 @@ process Pal2Nal {
         -output fasta \\
         -nogap \\
         -nomismatch \\
-    > codon.fna
+    > codon.fna \\
+    2> pal2nal.err
+
+    cat pal2nal.err >&2
+
+    if [ ! -s codon.fna ]
+    then
+        >&2 echo "[ERROR] PAL2NAL produced an empty alignment"
+        exit 1
+    fi
+
+    if ! grep -q '^>' codon.fna
+    then
+        >&2 echo "[ERROR] PAL2NAL output is not FASTA"
+        exit 1
+    fi
     """
 }
