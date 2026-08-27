@@ -10,6 +10,6 @@ process MAFFT {
 
     script:
     """
-    mafft --auto --thread ${task.cpus} ${prot_faa} > aln.faa
+    mafft --auto --thread "${task.cpus}" "${prot_faa}" > aln.faa
     """
 }

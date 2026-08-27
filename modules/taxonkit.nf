@@ -1,4 +1,4 @@
-process Fetch_taxonkit_db {
+process FetchTaxonkitDB {
 
     tag "${url}"
 
@@ -28,7 +28,7 @@ process Fetch_taxonkit_db {
 }
 
 
-process Fetch_taxonomic_ranks {
+process FetchTaxonomicRanks {
 
     tag "${table}"
 
@@ -70,5 +70,52 @@ process Fetch_taxonomic_ranks {
     | tr \$'\\t' , \
     >> "taxonomy.csv"
 
+    """
+}
+
+process ResolveSpecies {
+    tag "$id"
+
+    input:
+    tuple val( id ), path( taxonkit_db )
+
+    output:
+    tuple val( id ), path( "result.csv" ), emit: file
+    tuple val( id ), stdout, emit: stdout
+
+    script:
+    """
+    set -euox pipefail
+
+    echo "${id}" \
+    | taxonkit lineage -t \
+        --data-dir "${taxonkit_db}" \
+    > lineage.tsv
+
+    awk -F'\\t' '{
+        n=split(\$3, a, ";"); 
+        for(i=1; i<=n; i++) print a[i]
+    }' lineage.tsv \
+    > lineage_ids.txt
+
+    tail -n+2 lineage_ids.txt \
+    | taxonkit filter \
+        --equal-to species \
+        --data-dir "${taxonkit_db}" \
+    > species.txt
+
+    species_id=\$(cat species.txt | cut -f1)
+
+    if [ -z "\$species_id" ]; then
+        >&2 echo "[WARN] No species ancestor for ${id}, using as-is"
+        species_id="${id}"
+    elif [ "\$species_id" != "${id}" ]; 
+    then
+        >&2 echo "Resolved ${id} = \$species_id" 
+    fi
+
+    echo "taxon_id,species_id" > result.csv
+    echo "${id},\$species_id" >> result.csv
+    printf "\$species_id"
     """
 }

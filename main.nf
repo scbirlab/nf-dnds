@@ -58,6 +58,7 @@ log.info """${pipeline_name}
          inputs
             input dir.     : ${params.inputs}
             sample sheet   : ${params.sample_sheet}
+            max. genomes   : ${params.max_strains}
          output            : ${params.outputs}
          """
          .stripIndent()
@@ -88,8 +89,9 @@ include {
    ProteinOrtho;
 } from './modules/proteinortho.nf'
 include {
-   Fetch_taxonkit_db;
-   Fetch_taxonomic_ranks;
+   FetchTaxonkitDB;
+   FetchTaxonomicRanks;
+   ResolveSpecies;
 } from './modules/taxonkit.nf'
 include {
    MultiQC;
@@ -101,6 +103,7 @@ workflow {
       params.sample_sheet, 
       checkIfExists: true 
    )
+      .tap { sample_sheet_ch }
       .splitCsv( header: true )
       .set { csv_ch }
 
@@ -108,35 +111,58 @@ workflow {
       .map { v -> v.taxon_id }
       .set { taxon_ch }
 
-   Fetch_genome_from_NCBI( taxon_ch )
-   EXTRACT_CDS( DOWNLOAD_GENOMES.out )
-   ProteinOrtho( EXTRACT_CDS.out )
-   EXTRACT_ORTHOGROUPS( ProteinOrtho.out )
+   FetchTaxonkitDB(
+      Channel.of( params.taxonkit_db_url ),
+   )
+
+   FetchTaxonomicRanks(
+      sample_sheet_ch
+         .combine( FetchTaxonkitDB.out ),
+      Channel.value( "taxon_id" ),
+   )
+
+   taxon_ch
+      .combine( FetchTaxonkitDB.out ) 
+   | ResolveSpecies
+
+   Fetch_genome_from_NCBI( 
+      ResolveSpecies.out.stdout, 
+      Channel.value( params.max_strains ),
+   )
+
+   ProteinOrtho(
+      Fetch_genome_from_NCBI.out.protein,
+   )
+
+   //EXTRACT_CDS( Fetch_genome_from_NCBI.out )
+   // ProteinOrtho( EXTRACT_CDS.out )
+   //EXTRACT_ORTHOGROUPS( ProteinOrtho.out )
 
    // Fan-out: one tuple per orthogroup
-   og_ch = EXTRACT_ORTHOGROUPS.out
-      .flatMap { taxon_id, manifest, og_dir ->
-         manifest.readLines().drop(1)
-               .collect { og_id ->
-                  [
-                     taxon_id,
-                     og_id,
-                     og_dir.resolve("${og_id}/prot.faa"),
-                     og_dir.resolve("${og_id}/cds.fna")
-                  ]
-               }
-      }
+   // EXTRACT_ORTHOGROUPS.out
+   //    .flatMap { taxon_id, manifest, og_dir ->
+   //       manifest.readLines().drop(1)
+   //             .collect { og_id ->
+   //                [
+   //                   taxon_id,
+   //                   og_id,
+   //                   og_dir.resolve("${og_id}/prot.faa"),
+   //                   og_dir.resolve("${og_id}/cds.fna")
+   //                ]
+   //             }
+   //    }
+   //    .set { orthogroups_ch }
 
-   MAFFT(og_ch)
-   pal2nal(MAFFT.out)
-   FastTree(PAL2NAL.out)
-   HyPhy(FASTTREE.out)
+   // MAFFT( orthogroups_ch )
+   // Pal2Nal(MAFFT.out)
+   // FastTree(Pal2Nal.out)
+   // HyPhy(FastTree.out)
 
-   HyPhy.out
-      .groupTuple()
-      .set { grouped_ch }
+   // HyPhy.out
+   //    .groupTuple()
+   //    .set { grouped_ch }
 
-   PARSE_HYPHY( grouped_ch )
+   // ParseHyPhy( grouped_ch )
 
    // outputs
    //    .concat( other_outputs )

@@ -40,45 +40,75 @@ process fetch_genome_from_NCBI {
 
 process Fetch_genome_from_NCBI2 {
 
-   tag "${accession}"
-   label 'some_mem'
+   tag "${id}=${accession}; lim=${max_strains}"
+   label 'med_mem'
 
    publishDir( 
       "${params.outputs}/genome", 
       mode: 'copy',
-      saveAs: { "${accession}.${it}"},
+      saveAs: { "${id}_dataset"},
    )
 
    input:
-   val accession
+   tuple val( id ), val( accession )
    val max_strains
 
    output:
-   tuple val( accession ), path( "all-nucleotides.fna" ), path( "all-annotations.gff" )
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/protein.faa" ), emit: protein
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/cds_from_genomic.fna" ), emit: cds
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/genomic.gff" ), emit: gff
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/genomic.gbff" ), emit: genbank
+   tuple val( id ), path( "_dataset-to-output/GC{F,A}_*.?/*_genomic.fna" ), emit: genome
 
    script:
+   def limit = max_strains ? max_strains : 0
    """
    set -euox pipefail
-   ACCESSIONS=\$(echo "${accession}" | tr '+' ' ')
-   
-   for acc in \$ACCESSIONS
-   do
-      datasets download genome taxon ${taxon_id} \\
-         --assembly-source refseq \\
-         --assembly-level complete \\
-         --include cds,protein,gbff \\
-         --limit ${max_strains} \\
-         --filename genome.zip
-      unzip genome.zip -d dataset/
-      unzip -o \$acc"_genome-out" ncbi_dataset/data/"\$acc"/{"\$acc"_*_genomic.fna,*.gff,*.faa,*.gbk}
-      mv ncbi_dataset/data/*/"\$acc"_*_genomic.fna \$acc.fna
-      mv ncbi_dataset/data/*/*.faa \$acc.faa
-      mv ncbi_dataset/data/*/*.gbk \$acc.gbk
-      mv ncbi_dataset/data/*/*.gff \$acc.gff
-   done
 
-   cat *.fna > all-nucleotides.fna
-   cat *.gff > all-annotations.gff
+   datasets download genome taxon "${id}" \\
+      --annotated \\
+      --mag exclude \\
+      --exclude-multi-isolate \\
+      --exclude-atypical \\
+      --assembly-source refseq \\
+      --assembly-level complete \\
+      --assembly-version current \\
+      --include genome,cds,protein,gbff,gff3 \\
+      --filename genome.zip
+   unzip genome.zip -d dataset-"${id}"/
+
+   datasets download genome taxon "${accession}" \\
+      --annotated \\
+      --mag exclude \\
+      --exclude-multi-isolate \\
+      --exclude-atypical \\
+      --assembly-source refseq \\
+      --assembly-level complete \\
+      --assembly-version current \\
+      --include genome,cds,protein,gbff,gff3 \\
+      --filename genome.zip
+   unzip genome.zip -d dataset-"${accession}"/
+
+   mkdir -p _dataset-to-output
+   if [ "${limit}" -gt 0 ]
+   then
+      i="${limit}"
+      n_files=\$(echo dataset-"${accession}"/ncbi_dataset/data/GC?_*.?/ | tr ' ' \$'\\n' | wc -l)
+      
+      mv dataset-"${id}"/ncbi_dataset/data/GC?_*.?/ _dataset-to-output
+      i="\$((i - \$n_files))"
+      rm -rf dataset-"${id}"
+
+      if [ "\$i" -gt 0 ]
+      then
+         mv \$(echo dataset-"${accession}"/ncbi_dataset/data/GC?_*.?/ | tr ' ' \$'\\n' | grep -v "\$REF" | head -n"\$i") _dataset-to-output
+      fi
+   else
+      mv dataset-*/ _dataset-to-output
+   fi
+
+   rm -rf dataset-*/
+
    """
 }
 
