@@ -77,6 +77,9 @@ include {
    ParseHyPy;
 } from './modules/hyphy.nf'
 include {
+   AssessCodonAlignment;
+} from './modules/qc.nf'
+include {
    MAFFT;
 } from './modules/mafft.nf'
 include {
@@ -164,10 +167,22 @@ workflow {
             by: [0, 1],
          ),
    )
-   | FastTree
+
+   AssessCodonAlignment(
+      Pal2Nal.out,
+      Channel.value( params.min_sequences ),
+      Channel.value( params.min_unique_sequences ),
+      Channel.value( params.min_codons ),
+      Channel.value( params.min_variable_codons ),
+      Channel.value( params.max_ambiguous_fraction ),
+   )
+   
+
+   FastTree( AssessCodonAlignment.out.analysable )
    
    HyPhy(
-      Pal2Nal.out.combine( FastTree.out, by: [0, 1] ),
+      AssessCodonAlignment.out.analysable
+         .combine( FastTree.out, by: [0, 1] ),
       Channel.value( params.pvalue ),
    )
 

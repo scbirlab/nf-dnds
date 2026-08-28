@@ -5,8 +5,8 @@ process HyPhy {
 
     tag "${id}:${orthogroup_id}"
 
-    errorStrategy "ignore"
-    
+    // errorStrategy "ignore"
+
     publishDir( 
       "${params.outputs}/hyphy/slac", 
       mode: 'copy',
@@ -43,10 +43,10 @@ process ParseHyPy {
     publishDir "${params.outdir}/dnds", mode: 'copy'
 
     input:
-    tuple val(taxon_id), path(slac_jsons)
+    tuple val( id ), val( orthogroup_id ), path(slac_jsons)
 
     output:
-    path "${taxon_id}.dnds.tsv"
+    tuple val( id ), val( orthogroup_id ), path ( "dnds.tsv" )
 
     script:
     """

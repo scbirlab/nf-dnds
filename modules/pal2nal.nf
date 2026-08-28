@@ -11,7 +11,7 @@ process Pal2Nal {
     tuple val( id ), val( orthogroup_id ), path( prot_aln ), path( cds_fna )
 
     output:
-    tuple val( id ), val( orthogroup_id ), path( "codon.fna" )
+    tuple val(id), val(orthogroup_id), path("codon.fna")
 
     script:
     """
