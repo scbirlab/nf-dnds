@@ -405,9 +405,8 @@ def main():
     # The existence of this file is the Nextflow routing mechanism.
     # Non-analysable alignments simply do not emit this channel item.
     if status == "ANALYSABLE":
-        write_deduplicated_fasta(
-            args.analysable,
-            stats["sequence_groups"],
+        Path(args.analysable).write_text(
+            Path(args.alignment).read_text()
         )
 
     print(
