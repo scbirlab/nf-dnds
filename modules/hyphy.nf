@@ -5,6 +5,14 @@ process HyPhy {
 
     tag "${id}:${orthogroup_id}"
 
+    errorStrategy "ignore"
+    
+    publishDir( 
+      "${params.outputs}/hyphy/slac", 
+      mode: 'copy',
+      saveAs: { "${id}_${orthogroup_id}_${it}"},
+    )
+
     input:
     tuple val( id ), val( orthogroup_id ), path( codon_aln ), path( tree )
     val pvalue
