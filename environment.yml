@@ -1,4 +1,4 @@
-name: nf-env
+name: nf-dnds
 
 channels:
     - conda-forge
@@ -7,7 +7,19 @@ channels:
 dependencies:
     - python==3.12
     - pip
+    - conda-forge::jq
+    - conda-forge::ncbi-datasets-cli
     - conda-forge::openssl
     - conda-forge::unzip
+    - bioconda::diamond
+    - bioconda::fasttree
+    - bioconda::hyphy
+    - bioconda::mafft
+    - bioconda::pal2nal
+    - bioconda::proteinortho
+    - bioconda::taxonkit
     - pip:
+        - "carabiner-tools[pd,mpl]>=0.0.5.post3"
+        - "numpy"
+        - "scikit-learn"
         - 'multiqc>=1.21'
