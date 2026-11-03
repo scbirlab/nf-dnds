@@ -20,6 +20,7 @@ dependencies:
     - bioconda::taxonkit
     - pip:
         - "carabiner-tools[pd,mpl]>=0.0.5.post3"
+        = "bioino"
         - "numpy"
         - "scikit-learn"
         - 'multiqc>=1.21'
